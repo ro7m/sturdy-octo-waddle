@@ -38,15 +38,10 @@ jobs:
 
       - name: Build Python bridge
         run: |
-          # Create python directory if it doesn't exist
-          mkdir -p python
-          
-          # Copy files to python directory
-          cp -r python/flutter_onnx_ffi/* python/
-          
+
           # Build the bridge
           cd python
-          python build.py
+          python build_shared_lib.py
           
           # Create directories for Android libraries
           mkdir -p ../android/app/src/main/jniLibs/arm64-v8a/
