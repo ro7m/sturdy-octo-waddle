@@ -44,12 +44,15 @@ jobs:
           mkdir -p ../android/app/src/main/jniLibs/armeabi-v7a
           mkdir -p ../android/app/src/main/jniLibs/x86_64
           
-          # Copy the built library to Android directories
-          LIB_PATH=$(find . -name "ocr_bridge*.so")
-          if [ -n "$LIB_PATH" ]; then
-            cp "$LIB_PATH" ../android/app/src/main/jniLibs/arm64-v8a/libocr_bridge.so
-            cp "$LIB_PATH" ../android/app/src/main/jniLibs/armeabi-v7a/libocr_bridge.so
-            cp "$LIB_PATH" ../android/app/src/main/jniLibs/x86_64/libocr_bridge.so
+          # Find the most recently built .so file
+          LATEST_SO=$(find . -name "*.so" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+          
+          if [ -n "$LATEST_SO" ] && [ -f "$LATEST_SO" ]; then
+            echo "Found library at: $LATEST_SO"
+            cp "$LATEST_SO" ../android/app/src/main/jniLibs/arm64-v8a/libocr_bridge.so
+            cp "$LATEST_SO" ../android/app/src/main/jniLibs/armeabi-v7a/libocr_bridge.so
+            cp "$LATEST_SO" ../android/app/src/main/jniLibs/x86_64/libocr_bridge.so
+            echo "Library copied successfully"
           else
             echo "Failed to find built library"
             exit 1
