@@ -42,7 +42,7 @@ jobs:
           mkdir -p python
           
           # Copy files to python directory
-          cp -r flutter_onnxtr_ffi/* python/
+          cp -r flutter_onnx_ffi/* python/
           
           # Build the bridge
           cd python
