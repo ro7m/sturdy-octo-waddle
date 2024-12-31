@@ -41,7 +41,7 @@ jobs:
 
           # Build the bridge
           cd python
-          python build_shared_lib.py
+          python -m build
           
           # Create directories for Android libraries
           mkdir -p ../android/app/src/main/jniLibs/arm64-v8a/
