@@ -1,0 +1,74 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install onnxtr numpy Pillow
+          pip install setuptools wheel
+
+      - name: Build Python bridge
+        run: |
+          cd python
+          python build.py
+          mkdir -p ../android/app/src/main/jniLibs/arm64-v8a/
+          mkdir -p ../android/app/src/main/jniLibs/armeabi-v7a/
+          mkdir -p ../android/app/src/main/jniLibs/x86_64/
+          cp build/lib*/libocr_bridge.so ../android/app/src/main/jniLibs/arm64-v8a/
+          cp build/lib*/libocr_bridge.so ../android/app/src/main/jniLibs/armeabi-v7a/
+          cp build/lib*/libocr_bridge.so ../android/app/src/main/jniLibs/x86_64/
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Update Android Gradle
+        run: |
+          cd android
+          ./gradlew wrapper --gradle-version 7.6.1
+          cd ..
+
+      - name: Configure Gradle for Android
+        run: |
+          echo "org.gradle.jvmargs=-Xmx1536M -Dfile.encoding=UTF-8" >> android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+
+      - name: Build Android APK
+        run: flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug
+          path: build/app/outputs/flutter-apk/wuai-ocr-debug.apk
