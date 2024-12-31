@@ -15,8 +15,7 @@ def install_dependencies():
             'numpy',
             'onnxtr',
             'Pillow',
-            'setuptools',
-            'wheel'
+            'setuptools'
         ])
         return True
     except subprocess.CalledProcessError as e:
