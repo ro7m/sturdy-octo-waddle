@@ -2,14 +2,41 @@ import subprocess
 import sys
 import os
 
-def build_bridge():
+def install_dependencies():
+    """Install required packages."""
     try:
-        # Run pip install if requirements.txt exists
-        if os.path.exists('requirements.txt'):
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
+        print("Installing required packages...")
+        subprocess.check_call([
+            sys.executable, 
+            '-m', 
+            'pip', 
+            'install',
+            '--upgrade',
+            'numpy',
+            'onnxtr',
+            'Pillow',
+            'setuptools',
+            'wheel'
+        ])
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing dependencies: {e}")
+        return False
+
+def build_bridge():
+    """Build the OCR bridge."""
+    try:
+        # First ensure dependencies are installed
+        if not install_dependencies():
+            return False
 
         # Install the package in development mode
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-e', '.'])
+        subprocess.check_call([
+            sys.executable,
+            'setup.py',
+            'build_ext',
+            '--inplace'
+        ])
         
         print("Bridge built successfully!")
         return True
