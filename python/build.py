@@ -1,50 +1,22 @@
-import os
+import subprocess
 import sys
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
+import os
 
-def build_shared_library():
-    """Build shared library for FFI."""
-    
-    # Determine library name based on platform
-    if sys.platform == 'win32':
-        lib_name = 'ocr_bridge.dll'
-    elif sys.platform == 'darwin':
-        lib_name = 'libocr_bridge.dylib'
-    else:
-        lib_name = 'libocr_bridge.so'
+def build_bridge():
+    try:
+        # Run pip install if requirements.txt exists
+        if os.path.exists('requirements.txt'):
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
 
-    # Source files
-    sources = ['flutter_onnx_ffi/bridge.py']
-
-    # Platform-specific compile arguments
-    extra_compile_args = []
-    extra_link_args = []
-
-    if sys.platform == 'darwin':
-        extra_compile_args.extend(['-arch', 'x86_64', '-arch', 'arm64'])
-        extra_link_args.extend(['-arch', 'x86_64', '-arch', 'arm64'])
-    
-    # Define extension
-    extension = Extension(
-        'ocr_bridge',
-        sources=sources,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    # Build
-    setup(
-        name='ocr_bridge',
-        version='1.0.0',
-        ext_modules=[extension],
-        cmdclass={'build_ext': build_ext},
-        install_requires=[
-            'onnxtr',
-            'numpy',
-            'Pillow',
-        ],
-    )
+        # Install the package in development mode
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-e', '.'])
+        
+        print("Bridge built successfully!")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error building bridge: {e}")
+        return False
 
 if __name__ == '__main__':
-    build_shared_library()
+    success = build_bridge()
+    sys.exit(0 if success else 1)

@@ -1,5 +1,6 @@
 from onnxtr.io import DocumentFile
 from onnxtr.models import ocr_predictor
+import json
 
 class OCREngine:
     def __init__(self):
@@ -10,18 +11,15 @@ class OCREngine:
 
     def process_image(self, image_path: str, min_confidence: float = 0.5):
         try:
-            # Load and process image
             img = DocumentFile.from_images([image_path])
             result = self.predictor(img)
-            
-            return {
+            return json.dumps({
                 'status': 'success',
                 'text': result.text,
-                'boxes': result.boxes,
-                'confidence': float(result.confidence) if hasattr(result, 'confidence') else 1.0
-            }
+                'confidence': float(min_confidence),
+            }).encode('utf-8')
         except Exception as e:
-            return {
+            return json.dumps({
                 'status': 'error',
                 'message': str(e)
-            }
+            }).encode('utf-8')

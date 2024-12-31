@@ -23,38 +23,26 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          # Explicitly check if requirements.txt exists
-          if [ -f "python/requirements.txt" ]; then
-            pip install -r python/requirements.txt
-          else
-            echo "requirements.txt not found at python/requirements.txt"
-            exit 1
-          fi
-
-      - name: List directory structure
-        run: |
-          echo "Current directory structure:"
-          ls -R
+          pip install -r python/requirements.txt
 
       - name: Build Python bridge
         run: |
-
-          # Build the bridge
           cd python
-          python -m build
+          python build.py
           
-          # Create directories for Android libraries
-          mkdir -p ../android/app/src/main/jniLibs/arm64-v8a/
-          mkdir -p ../android/app/src/main/jniLibs/armeabi-v7a/
-          mkdir -p ../android/app/src/main/jniLibs/x86_64/
+          # Create Android library directories
+          mkdir -p ../android/app/src/main/jniLibs/arm64-v8a
+          mkdir -p ../android/app/src/main/jniLibs/armeabi-v7a
+          mkdir -p ../android/app/src/main/jniLibs/x86_64
           
-          # Copy the compiled library
-          if [ -f "build/lib*/libocr_bridge.so" ]; then
-            cp build/lib*/libocr_bridge.so ../android/app/src/main/jniLibs/arm64-v8a/
-            cp build/lib*/libocr_bridge.so ../android/app/src/main/jniLibs/armeabi-v7a/
-            cp build/lib*/libocr_bridge.so ../android/app/src/main/jniLibs/x86_64/
+          # Copy the built library to Android directories
+          LIB_PATH=$(find . -name "ocr_bridge*.so")
+          if [ -n "$LIB_PATH" ]; then
+            cp "$LIB_PATH" ../android/app/src/main/jniLibs/arm64-v8a/libocr_bridge.so
+            cp "$LIB_PATH" ../android/app/src/main/jniLibs/armeabi-v7a/libocr_bridge.so
+            cp "$LIB_PATH" ../android/app/src/main/jniLibs/x86_64/libocr_bridge.so
           else
-            echo "Library file not found!"
+            echo "Failed to find built library"
             exit 1
           fi
 
@@ -73,19 +61,6 @@ jobs:
 
       - name: Install Flutter dependencies
         run: flutter pub get
-
-      - name: Update Android Gradle
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew wrapper --gradle-version 7.6.1
-          cd ..
-
-      - name: Configure Gradle for Android
-        run: |
-          echo "org.gradle.jvmargs=-Xmx1536M -Dfile.encoding=UTF-8" >> android/gradle.properties
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
 
       - name: Build Android APK
         run: flutter build apk --debug
