@@ -2,8 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../ffi/ocr_bridge.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+
+class CameraScreen extends StatefulWidget {
+  final CameraDescription camera;
+
+  const CameraScreen({
+    super.key,
+    required this.camera,
+  });
+
+  @override
+  CameraScreenState createState() => CameraScreenState();
+}
 
 class CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
@@ -85,6 +95,73 @@ class CameraScreenState extends State<CameraScreen> {
       _controller.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _processImage(String imagePath) async {
+    try {
+      _updateDebugInfo('Processing image: $imagePath');
+      
+      final result = await _ocrBridge.processImage(imagePath);
+      _updateDebugInfo('OCR Result: $result');
+      
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('OCR Results'),
+          content: SingleChildScrollView(
+            child: Text(result.toString()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      _updateDebugInfo('Error processing image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _takePicture() async {
+    if (_isProcessing) return;
+
+    try {
+      _updateDebugInfo('Taking picture...');
+      setState(() {
+        _isProcessing = true;
+      });
+
+      await _initializeControllerFuture;
+      final image = await _controller.takePicture();
+      _updateDebugInfo('Picture taken, processing image...');
+      await _processImage(image.path);
+
+    } catch (e) {
+      _updateDebugInfo('Error taking picture: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -193,35 +270,5 @@ class CameraScreenState extends State<CameraScreen> {
         return const Center(child: CircularProgressIndicator());
       },
     );
-  }
-
-  Future<void> _takePicture() async {
-    if (_isProcessing) return;
-
-    try {
-      _updateDebugInfo('Taking picture...');
-      setState(() {
-        _isProcessing = true;
-      });
-
-      await _initializeControllerFuture;
-      final image = await _controller.takePicture();
-      _updateDebugInfo('Picture taken, processing image...');
-      await _processImage(image.path);
-
-    } catch (e) {
-      _updateDebugInfo('Error taking picture: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-    }
   }
 }
