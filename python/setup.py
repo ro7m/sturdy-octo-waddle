@@ -26,11 +26,13 @@ class BuildAndroidExt(Command):
                 'cc': 'aarch64-linux-android21-clang',
                 'target': 'aarch64-linux-android21',
                 'arch_flags': [],
+                'platform_defines': ['-DPy_LONG_BIT=64'],
             },
             'armeabi-v7a': {
                 'cc': 'armv7a-linux-androideabi21-clang',
                 'target': 'armv7a-linux-androideabi21',
                 'arch_flags': ['-mfloat-abi=softfp', '-mfpu=vfpv3-d16'],
+                'platform_defines': ['-DPy_LONG_BIT=32'],
             }
         }
 
@@ -54,6 +56,15 @@ class BuildAndroidExt(Command):
             print(f"Python include directory: {python_include}")
             print(f"Sysroot: {sysroot}")
 
+            # Common defines for Python compatibility
+            python_defines = [
+                '-DPy_BUILD_CORE',
+                '-DNDEBUG',
+                *config['platform_defines'],
+                '-DPLATFORM_ANDROID',
+                f'-DPYTHON_VERSION="{python_version}"',
+            ]
+
             # Compile command
             cmd = [
                 cc,
@@ -63,7 +74,7 @@ class BuildAndroidExt(Command):
                 f'-I{python_include}',
                 f'--sysroot={sysroot}',
                 *config['arch_flags'],
-                '-DNDEBUG',  # Define NDEBUG as we're building release
+                *python_defines,
                 'flutter_onnx_ffi/bridge.c',
                 '-o',
                 os.path.join(output_dir, 'libocr_bridge.so')
