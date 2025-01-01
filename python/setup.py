@@ -20,76 +20,65 @@ class BuildAndroidExt(Command):
         if not android_ndk:
             raise EnvironmentError("ANDROID_NDK_HOME environment variable not set")
 
-        # Build for different Android architectures
-        architectures = {
-            'arm64-v8a': {
-                'cc': 'aarch64-linux-android21-clang',
-                'target': 'aarch64-linux-android21',
-                'arch_flags': [],
-                'platform_defines': ['-DPy_LONG_BIT=64'],
-            },
-            'armeabi-v7a': {
-                'cc': 'armv7a-linux-androideabi21-clang',
-                'target': 'armv7a-linux-androideabi21',
-                'arch_flags': ['-mfloat-abi=softfp', '-mfpu=vfpv3-d16'],
-                'platform_defines': ['-DPy_LONG_BIT=32'],
-            }
+        # Only build for arm64-v8a
+        abi = 'arm64-v8a'
+        config = {
+            'cc': 'aarch64-linux-android21-clang',
+            'target': 'aarch64-linux-android21',
         }
 
         # Get Python paths
         python_version = f"{sys.version_info[0]}.{sys.version_info[1]}"
         python_include = os.path.join(sys.prefix, 'include', f'python{python_version}')
         
-        for abi, config in architectures.items():
-            print(f"\nBuilding for {abi}...")
-            
-            # Set up compiler and paths
-            toolchain = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'bin')
-            cc = os.path.join(toolchain, config['cc'])
-            sysroot = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'sysroot')
-            
-            # Create output directory
-            output_dir = f'build/lib.android-{abi}'
-            os.makedirs(output_dir, exist_ok=True)
-            
-            print(f"Using compiler: {cc}")
-            print(f"Python include directory: {python_include}")
-            print(f"Sysroot: {sysroot}")
+        print(f"\nBuilding for {abi}...")
+        
+        # Set up compiler and paths
+        toolchain = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'bin')
+        cc = os.path.join(toolchain, config['cc'])
+        sysroot = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'sysroot')
+        
+        # Create output directory
+        output_dir = f'build/lib.android-{abi}'
+        os.makedirs(output_dir, exist_ok=True)
+        
+        print(f"Using compiler: {cc}")
+        print(f"Python include directory: {python_include}")
+        print(f"Sysroot: {sysroot}")
 
-            # Common defines for Python compatibility
-            python_defines = [
-                '-DPy_BUILD_CORE',
-                '-DNDEBUG',
-                *config['platform_defines'],
-                '-DPLATFORM_ANDROID',
-                f'-DPYTHON_VERSION="{python_version}"',
-            ]
+        # Common defines for Python compatibility
+        python_defines = [
+            '-DPy_BUILD_CORE',
+            '-DNDEBUG',
+            '-DPy_LONG_BIT=64',
+            '-DPLATFORM_ANDROID',
+            f'-DPYTHON_VERSION="{python_version}"',
+        ]
 
-            # Compile command
-            cmd = [
-                cc,
-                '-shared',
-                '-fPIC',
-                '-O3',
-                f'-I{python_include}',
-                f'--sysroot={sysroot}',
-                *config['arch_flags'],
-                *python_defines,
-                'flutter_onnx_ffi/bridge.c',
-                '-o',
-                os.path.join(output_dir, 'libocr_bridge.so')
-            ]
+        # Compile command
+        cmd = [
+            cc,
+            '-shared',
+            '-fPIC',
+            '-O3',
+            f'-I{python_include}',
+            f'--sysroot={sysroot}',
+            *python_defines,
+            'flutter_onnx_ffi/bridge.c',
+            '-o',
+            os.path.join(output_dir, 'libocr_bridge.so')
+        ]
 
-            print(f"Running command: {' '.join(cmd)}")
-            
-            try:
-                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-                print(f"Build output: {output.decode()}")
-                print(f"Successfully built for {abi}")
-            except subprocess.CalledProcessError as e:
-                print(f"Error building for {abi}:")
-                print(f"Command output: {e.output.decode()}")
-                raise
+        print(f"Running command: {' '.join(cmd)}")
+        
+        try:
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            print(f"Build output: {output.decode()}")
+            print(f"Successfully built for {abi}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error building for {abi}:")
+            print(f"Command output: {e.output.decode()}")
+            raise
 
 class CustomBuildExt(build_ext):
     def build_extensions(self):

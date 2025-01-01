@@ -55,7 +55,6 @@ jobs:
           
           # Create Android library directories
           mkdir -p ../android/app/src/main/jniLibs/arm64-v8a
-          mkdir -p ../android/app/src/main/jniLibs/armeabi-v7a
           
           # Copy the built .so files
           cp build/lib.android-arm64-v8a/libocr_bridge.so ../android/app/src/main/jniLibs/arm64-v8a/ || {
@@ -64,17 +63,9 @@ jobs:
             exit 1
           }
           
-          cp build/lib.android-armeabi-v7a/libocr_bridge.so ../android/app/src/main/jniLibs/armeabi-v7a/ || {
-            echo "Failed to copy armeabi-v7a library"
-            find . -name "*.so"
-            exit 1
-          }
-          
           # Verify architectures
           echo "Verifying arm64-v8a library:"
           file ../android/app/src/main/jniLibs/arm64-v8a/libocr_bridge.so
-          echo "Verifying armeabi-v7a library:"
-          file ../android/app/src/main/jniLibs/armeabi-v7a/libocr_bridge.so
 
       - name: Set up JDK
         uses: actions/setup-java@v3
