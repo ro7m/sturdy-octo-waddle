@@ -15,34 +15,50 @@ def install_dependencies():
             'numpy',
             'onnxtr',
             'Pillow',
-            'setuptools'
+            'setuptools',
+            'crossenv'  # Added for cross-compilation
         ])
         return True
     except subprocess.CalledProcessError as e:
         print(f"Error installing dependencies: {e}")
         return False
 
-def build_bridge():
-    """Build the OCR bridge."""
+def build_bridge_for_android():
+    """Build the OCR bridge for Android ARM architectures."""
     try:
-        # First ensure dependencies are installed
-        if not install_dependencies():
-            return False
-
-        # Install the package in development mode
+        # Build for arm64-v8a
+        print("Building for arm64-v8a...")
+        env = os.environ.copy()
+        env['ANDROID_ABI'] = 'arm64-v8a'
+        env['ANDROID_PLATFORM'] = '21'  # Minimum SDK version
+        
         subprocess.check_call([
             sys.executable,
             'setup.py',
             'build_ext',
-            '--inplace'
-        ])
+            '--inplace',
+            '--target-android'
+        ], env=env)
         
-        print("Bridge built successfully!")
+        # Build for armeabi-v7a
+        print("Building for armeabi-v7a...")
+        env['ANDROID_ABI'] = 'armeabi-v7a'
+        subprocess.check_call([
+            sys.executable,
+            'setup.py',
+            'build_ext',
+            '--inplace',
+            '--target-android'
+        ], env=env)
+        
+        print("Android builds completed successfully!")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error building bridge: {e}")
+        print(f"Error building for Android: {e}")
         return False
 
 if __name__ == '__main__':
-    success = build_bridge()
+    if not install_dependencies():
+        sys.exit(1)
+    success = build_bridge_for_android()
     sys.exit(0 if success else 1)
