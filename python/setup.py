@@ -31,7 +31,6 @@ class BuildAndroidExt(Command):
         # Get Python paths and version info
         python_version = f"{sys.version_info[0]}.{sys.version_info[1]}"
         python_include = sysconfig.get_path('include')
-        python_lib = sysconfig.get_config_var('LIBDIR')
         
         print(f"\nBuilding for {abi}...")
         
@@ -46,35 +45,29 @@ class BuildAndroidExt(Command):
         
         print(f"Using compiler: {cc}")
         print(f"Python include directory: {python_include}")
-        print(f"Python library directory: {python_lib}")
         print(f"Sysroot: {sysroot}")
-
-        # Get Python API version
-        python_api_version = sysconfig.get_config_var('PYTHON_API_VERSION')
-        if not python_api_version:
-            python_api_version = f"{sys.version_info[0]}0{sys.version_info[1]}"
 
         # Common defines for Python compatibility
         python_defines = [
             '-DPy_BUILD_CORE',
             '-DNDEBUG',
-            f'-DPYTHON_API_VERSION="{python_api_version}"',
             '-DPy_LONG_BIT=64',
             '-DPLATFORM_ANDROID',
             f'-DPYTHON_VERSION="{python_version}"',
+            # Remove PYTHON_API_VERSION define as it's already defined in modsupport.h
         ]
 
-        # Compile command
+        # Compile command without trying to link against Python library
         cmd = [
             cc,
             '-shared',
             '-fPIC',
             '-O3',
             f'-I{python_include}',
-            f'-L{python_lib}',
-            f'-lpython{python_version}',
             f'--sysroot={sysroot}',
             *python_defines,
+            '-DANDROID',
+            '-fvisibility=hidden',  # Hide symbols by default
             'flutter_onnx_ffi/bridge.c',
             '-o',
             os.path.join(output_dir, 'libocr_bridge.so')
@@ -86,14 +79,6 @@ class BuildAndroidExt(Command):
             output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             print(f"Build output: {output.decode()}")
             print(f"Successfully built for {abi}")
-
-            # Copy Python shared library
-            src_lib = os.path.join(python_lib, f'libpython{python_version}.so')
-            dst_lib = os.path.join(output_dir, f'libpython{python_version}.so')
-            if os.path.exists(src_lib):
-                import shutil
-                shutil.copy2(src_lib, dst_lib)
-                print(f"Copied Python library to {dst_lib}")
 
         except subprocess.CalledProcessError as e:
             print(f"Error building for {abi}:")
