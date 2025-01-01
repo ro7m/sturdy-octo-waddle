@@ -64,13 +64,27 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3          
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'
+          flutter-version: '3.27.1'
           channel: 'stable'
           cache: true
 
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
+
+      - name: Ensure AndroidX is enabled
+        run: |
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+                    
       - name: Install Flutter dependencies
         run: flutter pub get
 
