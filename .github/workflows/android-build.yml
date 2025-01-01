@@ -30,18 +30,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install numpy onnxtr Pillow setuptools crossenv  # Added crossenv
 
-      # ADD THIS STEP after Python dependencies and before Build Python bridge
       - name: Set up Android NDK
         run: |
           ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393"
           echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/25.1.8937393" >> $GITHUB_ENV
 
-      # REPLACE the existing "Build Python bridge" step with this:
       - name: Build Python bridge for Android
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
           cd python
+          
+          # Debug: Print NDK tools
+          echo "Available NDK tools:"
+          ls -l $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/
+          
           python build.py
           
           # Debug output
@@ -53,18 +56,17 @@ jobs:
           mkdir -p ../android/app/src/main/jniLibs/armeabi-v7a
           
           # Copy the built .so files
-          cp build/*arm64-v8a*/libocr_bridge.so ../android/app/src/main/jniLibs/arm64-v8a/ || {
+          cp build/lib.android-arm64-v8a/libocr_bridge.so ../android/app/src/main/jniLibs/arm64-v8a/ || {
             echo "Failed to copy arm64-v8a library"
-            ls -R build/
-            exit 1
-          }
-          cp build/*armeabi-v7a*/libocr_bridge.so ../android/app/src/main/jniLibs/armeabi-v7a/ || {
-            echo "Failed to copy armeabi-v7a library"
-            ls -R build/
+            find . -name "*.so"
             exit 1
           }
           
-          echo "Libraries copied successfully"
+          cp build/lib.android-armeabi-v7a/libocr_bridge.so ../android/app/src/main/jniLibs/armeabi-v7a/ || {
+            echo "Failed to copy armeabi-v7a library"
+            find . -name "*.so"
+            exit 1
+          }
           
           # Verify architectures
           echo "Verifying arm64-v8a library:"

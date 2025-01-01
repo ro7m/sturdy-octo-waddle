@@ -15,50 +15,44 @@ def install_dependencies():
             'numpy',
             'onnxtr',
             'Pillow',
-            'setuptools',
-            'crossenv'  # Added for cross-compilation
+            'setuptools'
         ])
         return True
     except subprocess.CalledProcessError as e:
         print(f"Error installing dependencies: {e}")
         return False
 
-def build_bridge_for_android():
-    """Build the OCR bridge for Android ARM architectures."""
+def build_bridge():
+    """Build the OCR bridge."""
     try:
-        # Build for arm64-v8a
-        print("Building for arm64-v8a...")
-        env = os.environ.copy()
-        env['ANDROID_ABI'] = 'arm64-v8a'
-        env['ANDROID_PLATFORM'] = '21'  # Minimum SDK version
+        # First ensure dependencies are installed
+        if not install_dependencies():
+            return False
+
+        # Build with Android target
+        if os.getenv('ANDROID_NDK_HOME'):
+            print("Building for Android...")
+            subprocess.check_call([
+                sys.executable,
+                'setup.py',
+                'build_ext',
+                '--target-android'
+            ])
+        else:
+            # Normal build
+            subprocess.check_call([
+                sys.executable,
+                'setup.py',
+                'build_ext',
+                '--inplace'
+            ])
         
-        subprocess.check_call([
-            sys.executable,
-            'setup.py',
-            'build_ext',
-            '--inplace',
-            '--target-android'
-        ], env=env)
-        
-        # Build for armeabi-v7a
-        print("Building for armeabi-v7a...")
-        env['ANDROID_ABI'] = 'armeabi-v7a'
-        subprocess.check_call([
-            sys.executable,
-            'setup.py',
-            'build_ext',
-            '--inplace',
-            '--target-android'
-        ], env=env)
-        
-        print("Android builds completed successfully!")
+        print("Bridge built successfully!")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error building for Android: {e}")
+        print(f"Error building bridge: {e}")
         return False
 
 if __name__ == '__main__':
-    if not install_dependencies():
-        sys.exit(1)
-    success = build_bridge_for_android()
+    success = build_bridge()
     sys.exit(0 if success else 1)

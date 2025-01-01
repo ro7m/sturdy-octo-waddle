@@ -1,64 +1,66 @@
 from setuptools import setup, Extension
 import sys
 import os
+import subprocess
+from distutils.command.build_ext import build_ext
 
-def get_android_compile_args():
-    android_ndk = os.getenv('ANDROID_NDK_HOME')
-    if not android_ndk:
-        raise EnvironmentError("ANDROID_NDK_HOME environment variable not set")
-    
-    abi = os.getenv('ANDROID_ABI')
-    if not abi:
-        raise EnvironmentError("ANDROID_ABI environment variable not set")
-    
-    platform_level = os.getenv('ANDROID_PLATFORM', '21')
-    
-    if abi == 'arm64-v8a':
-        arch = 'aarch64-linux-android'
-    elif abi == 'armeabi-v7a':
-        arch = 'armv7a-linux-androideabi'
-    else:
-        raise ValueError(f"Unsupported ABI: {abi}")
-    
-    toolchain = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64')
-    
-    return {
-        'compiler': os.path.join(toolchain, 'bin', f'{arch}{platform_level}-clang'),
-        'extra_compile_args': [
-            f'-target {arch}',
-            '-fPIC',
-            f'-D__ANDROID_API__={platform_level}'
-        ],
-        'extra_link_args': [
-            f'-target {arch}',
-            '-shared',
-            f'-D__ANDROID_API__={platform_level}'
-        ]
-    }
+class AndroidBuildExt(build_ext):
+    def build_extensions(self):
+        if '--target-android' in sys.argv:
+            android_ndk = os.getenv('ANDROID_NDK_HOME')
+            if not android_ndk:
+                raise EnvironmentError("ANDROID_NDK_HOME environment variable not set")
 
-def build_extension():
-    sources = ['flutter_onnx_ffi/bridge.c']
-    
-    if '--target-android' in sys.argv:
-        sys.argv.remove('--target-android')
-        android_args = get_android_compile_args()
-        
-        return Extension(
-            'ocr_bridge',
-            sources=sources,
-            extra_compile_args=android_args['extra_compile_args'],
-            extra_link_args=android_args['extra_link_args']
-        )
-    else:
-        return Extension(
-            'ocr_bridge',
-            sources=sources
-        )
+            # Build for different Android architectures
+            architectures = {
+                'arm64-v8a': {
+                    'cc': 'aarch64-linux-android21-clang',
+                    'target': 'aarch64-linux-android21',
+                },
+                'armeabi-v7a': {
+                    'cc': 'armv7a-linux-androideabi21-clang',
+                    'target': 'armv7a-linux-androideabi21',
+                }
+            }
+
+            for abi, config in architectures.items():
+                print(f"Building for {abi}...")
+                
+                # Set up compiler and flags
+                toolchain = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'bin')
+                cc = os.path.join(toolchain, config['cc'])
+                
+                # Create output directory
+                output_dir = f'build/lib.android-{abi}'
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # Compile
+                subprocess.check_call([
+                    cc,
+                    '-shared',
+                    '-fPIC',
+                    '-O3',
+                    '-I' + os.path.join(sys.prefix, 'include', f'python{sys.version_info[0]}.{sys.version_info[1]}'),
+                    'flutter_onnx_ffi/bridge.c',
+                    '-o',
+                    os.path.join(output_dir, 'libocr_bridge.so')
+                ])
+        else:
+            # Normal build
+            super().build_extensions()
 
 setup(
     name='flutter_onnx_ffi',
     version='1.0',
     description='OCR Bridge for Flutter',
-    ext_modules=[build_extension()],
+    ext_modules=[
+        Extension(
+            'ocr_bridge',
+            sources=['flutter_onnx_ffi/bridge.c'],
+        )
+    ],
+    cmdclass={
+        'build_ext': AndroidBuildExt,
+    },
     packages=['flutter_onnx_ffi'],
 )
