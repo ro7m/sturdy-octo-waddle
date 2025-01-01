@@ -42,9 +42,11 @@ jobs:
           cd python
           
           # Debug: Print NDK tools
+          echo "NDK location: $ANDROID_NDK_HOME"
           echo "Available NDK tools:"
           ls -l $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/
           
+          # Build
           python build.py
           
           # Debug output

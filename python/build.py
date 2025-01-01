@@ -29,17 +29,17 @@ def build_bridge():
         if not install_dependencies():
             return False
 
-        # Build with Android target
+        # Build with Android target if NDK is available
         if os.getenv('ANDROID_NDK_HOME'):
             print("Building for Android...")
             subprocess.check_call([
                 sys.executable,
                 'setup.py',
-                'build_ext',
-                '--target-android'
+                'build_android'  # Using our new custom command
             ])
         else:
             # Normal build
+            print("Building for host system...")
             subprocess.check_call([
                 sys.executable,
                 'setup.py',
