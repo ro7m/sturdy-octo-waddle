@@ -49,15 +49,15 @@ class BuildAndroidExt(Command):
 
         # Common defines for Python compatibility
         python_defines = [
+            '-DPy_LIMITED_API=0x03070000',  # Use Python 3.7+ stable ABI
+            '-DPY_SSIZE_T_CLEAN',
+            '-DANDROID',
             '-DPy_BUILD_CORE',
             '-DNDEBUG',
             '-DPy_LONG_BIT=64',
-            '-DPLATFORM_ANDROID',
-            f'-DPYTHON_VERSION="{python_version}"',
-            # Remove PYTHON_API_VERSION define as it's already defined in modsupport.h
         ]
 
-        # Compile command without trying to link against Python library
+        # Compile command
         cmd = [
             cc,
             '-shared',
@@ -66,8 +66,7 @@ class BuildAndroidExt(Command):
             f'-I{python_include}',
             f'--sysroot={sysroot}',
             *python_defines,
-            '-DANDROID',
-            '-fvisibility=hidden',  # Hide symbols by default
+            '-fvisibility=hidden',
             'flutter_onnx_ffi/bridge.c',
             '-o',
             os.path.join(output_dir, 'libocr_bridge.so')

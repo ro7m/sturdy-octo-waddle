@@ -1,4 +1,5 @@
 #define PY_SSIZE_T_CLEAN
+#define Py_LIMITED_API 0x03070000  // Use Python 3.7+ stable ABI
 #include <Python.h>
 
 static PyObject* ocr_engine = NULL;
@@ -44,19 +45,29 @@ static PyMethodDef BridgeMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef bridge_module = {
+static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "ocr_bridge",
     NULL,
     -1,
-    BridgeMethods
+    BridgeMethods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
 
-#ifdef ANDROID
 __attribute__((visibility("default")))
+PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit_ocr_bridge(void)
+#else
+initocr_bridge(void)
 #endif
-PyMODINIT_FUNC PyInit_ocr_bridge(void) {
-    static PyModuleDef_Base base = PyModuleDef_HEAD_INIT;
-    bridge_module.m_base = base;
-    return PyModule_Create(&bridge_module);
+{
+#if PY_MAJOR_VERSION >= 3
+    return PyModule_Create(&moduledef);
+#else
+    Py_InitModule3("ocr_bridge", BridgeMethods, NULL);
+#endif
 }
