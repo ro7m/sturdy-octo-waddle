@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'screens/camera_screen.dart';
+import 'services/python_bridge.dart';
 
 void main() async {
   try {
     // Ensure plugin services are initialized
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Initialize Python first
+    debugPrint("Initializing Python runtime...");
+    bool pythonInitialized = await PythonBridge.initialize();
+    if (!pythonInitialized) {
+      throw Exception('Failed to initialize Python runtime');
+    }
     
     debugPrint("Getting available cameras...");
     // Get available cameras
@@ -36,7 +44,7 @@ void main() async {
       MaterialApp(
         home: Scaffold(
           body: Center(
-            child: Text('Failed to initialize camera: $e'),
+            child: Text('Failed to initialize: $e'),
           ),
         ),
       ),

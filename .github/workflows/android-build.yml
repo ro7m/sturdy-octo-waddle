@@ -106,7 +106,13 @@ jobs:
 
       - name: Clean Gradle
         run: cd android && ./gradlew clean        
-
+      
+      - name: Build Python libraries
+        run: |
+          cd python
+          chmod +x build_python.sh
+          ./build_python.sh
+      
       - name: Build Android APK
         run: flutter build apk --release
 
