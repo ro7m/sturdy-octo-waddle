@@ -52,6 +52,12 @@ static struct PyModuleDef bridge_module = {
     BridgeMethods
 };
 
+#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit_ocr_bridge(void) {
-    return PyModule_Create(&bridge_module);
+    return PyModule_Create2(&bridge_module, PYTHON_API_VERSION);
 }
+#else
+PyMODINIT_FUNC initocr_bridge(void) {
+    PyModule_Create2(&bridge_module, PYTHON_API_VERSION);
+}
+#endif
