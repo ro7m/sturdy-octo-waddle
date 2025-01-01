@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart'
+import 'package:flutter/foundation.dart';
 
 class PythonBridge {
   static const platform = MethodChannel('com.wuai.text_extractor_app/ocr');
