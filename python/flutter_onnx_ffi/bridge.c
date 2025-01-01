@@ -4,7 +4,7 @@
 static PyObject* ocr_engine = NULL;
 
 static PyObject* initialize_ocr(void) {
-    PyObject* ocr_module = PyImport_ImportModule("flutter_onnxtr_ffi.ocr");
+    PyObject* ocr_module = PyImport_ImportModule("flutter_onnx_ffi.ocr");
     if (!ocr_module) {
         return NULL;
     }
