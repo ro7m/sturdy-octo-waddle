@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../ffi/ocr_bridge.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 class CameraScreen extends StatefulWidget {
   final CameraDescription camera;
@@ -19,10 +22,25 @@ class CameraScreenState extends State<CameraScreen> {
   late Future<void> _initializeControllerFuture;
   final OCRBridge _ocrBridge = OCRBridge();
   bool _isProcessing = false;
+  bool _isCameraPermissionGranted = false;
 
   @override
   void initState() {
     super.initState();
+    _requestCameraPermission();
+  }
+
+  Future<void> _requestCameraPermission() async {
+    final status = await Permission.camera.request();
+    setState(() {
+      _isCameraPermissionGranted = status == PermissionStatus.granted;
+    });
+    if (_isCameraPermissionGranted) {
+      _initializeCamera();
+    }
+  }
+
+  Future<void> _initializeCamera() async {
     _controller = CameraController(
       widget.camera,
       ResolutionPreset.medium,
