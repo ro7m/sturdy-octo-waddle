@@ -15,7 +15,7 @@ mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
 # Build Python for Android
-p4a create --requirements=python3 --arch=arm64-v8a --android-api=21 --bootstrap=sdl2 --dist_name=myapp
+p4a create --requirements=python3 --arch=arm64-v8a --android-api=35 --bootstrap=sdl2 --dist_name=myapp
 
 # Create the jniLibs directory
 JNILIBS_DIR="../android/app/src/main/jniLibs/arm64-v8a"
