@@ -25,12 +25,12 @@ class BuildAndroidExt(Command):
             'arm64-v8a': {
                 'cc': 'aarch64-linux-android21-clang',
                 'target': 'aarch64-linux-android21',
-                'arch_flags': [],  # No special flags needed for 64-bit
+                'arch_flags': [],
             },
             'armeabi-v7a': {
                 'cc': 'armv7a-linux-androideabi21-clang',
                 'target': 'armv7a-linux-androideabi21',
-                'arch_flags': ['-mfloat-abi=softfp', '-mfpu=vfpv3-d16'],  # Special flags for 32-bit ARM
+                'arch_flags': ['-mfloat-abi=softfp', '-mfpu=vfpv3-d16'],
             }
         }
 
@@ -62,9 +62,8 @@ class BuildAndroidExt(Command):
                 '-O3',
                 f'-I{python_include}',
                 f'--sysroot={sysroot}',
-                *config['arch_flags'],  # Architecture-specific flags
-                '-Wl,--no-undefined',  # Ensure all symbols are resolved
-                '-lpython3.10',  # Link against Python library
+                *config['arch_flags'],
+                '-DNDEBUG',  # Define NDEBUG as we're building release
                 'flutter_onnx_ffi/bridge.c',
                 '-o',
                 os.path.join(output_dir, 'libocr_bridge.so')
