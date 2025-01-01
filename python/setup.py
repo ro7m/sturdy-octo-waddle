@@ -25,51 +25,64 @@ class BuildAndroidExt(Command):
             'arm64-v8a': {
                 'cc': 'aarch64-linux-android21-clang',
                 'target': 'aarch64-linux-android21',
+                'arch_flags': [],  # No special flags needed for 64-bit
             },
             'armeabi-v7a': {
                 'cc': 'armv7a-linux-androideabi21-clang',
                 'target': 'armv7a-linux-androideabi21',
+                'arch_flags': ['-mfloat-abi=softfp', '-mfpu=vfpv3-d16'],  # Special flags for 32-bit ARM
             }
         }
 
+        # Get Python paths
+        python_version = f"{sys.version_info[0]}.{sys.version_info[1]}"
+        python_include = os.path.join(sys.prefix, 'include', f'python{python_version}')
+        
         for abi, config in architectures.items():
-            print(f"Building for {abi}...")
+            print(f"\nBuilding for {abi}...")
             
-            # Set up compiler and flags
+            # Set up compiler and paths
             toolchain = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'bin')
             cc = os.path.join(toolchain, config['cc'])
+            sysroot = os.path.join(android_ndk, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64', 'sysroot')
             
             # Create output directory
             output_dir = f'build/lib.android-{abi}'
             os.makedirs(output_dir, exist_ok=True)
             
-            # Get Python include directory
-            python_include = os.path.join(sys.prefix, 'include', f'python{sys.version_info[0]}.{sys.version_info[1]}')
-            
             print(f"Using compiler: {cc}")
             print(f"Python include directory: {python_include}")
+            print(f"Sysroot: {sysroot}")
+
+            # Compile command
+            cmd = [
+                cc,
+                '-shared',
+                '-fPIC',
+                '-O3',
+                f'-I{python_include}',
+                f'--sysroot={sysroot}',
+                *config['arch_flags'],  # Architecture-specific flags
+                '-Wl,--no-undefined',  # Ensure all symbols are resolved
+                '-lpython3.10',  # Link against Python library
+                'flutter_onnx_ffi/bridge.c',
+                '-o',
+                os.path.join(output_dir, 'libocr_bridge.so')
+            ]
+
+            print(f"Running command: {' '.join(cmd)}")
             
-            # Compile
             try:
-                subprocess.check_call([
-                    cc,
-                    '-shared',
-                    '-fPIC',
-                    '-O3',
-                    f'-I{python_include}',
-                    'flutter_onnx_ffi/bridge.c',
-                    '-o',
-                    os.path.join(output_dir, 'libocr_bridge.so')
-                ], stderr=subprocess.PIPE)
-                
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+                print(f"Build output: {output.decode()}")
                 print(f"Successfully built for {abi}")
             except subprocess.CalledProcessError as e:
-                print(f"Error building for {abi}: {e.stderr.decode()}")
+                print(f"Error building for {abi}:")
+                print(f"Command output: {e.output.decode()}")
                 raise
 
 class CustomBuildExt(build_ext):
     def build_extensions(self):
-        # Normal build process
         super().build_extensions()
 
 setup(
