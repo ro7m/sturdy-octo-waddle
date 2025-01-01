@@ -68,6 +68,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3          
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2        
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -80,6 +83,9 @@ jobs:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
           echo "flutter.sdk=$FLUTTER_HOME" >> android/local.properties
 
+      - name: Make Gradlew Executable
+        run: chmod +x android/gradlew
+
       - name: Ensure AndroidX is enabled
         run: |
           echo "android.useAndroidX=true" >> android/gradle.properties
@@ -88,11 +94,14 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Clean Gradle
+        run: cd android && ./gradlew clean        
+
       - name: Build Android APK
-        run: flutter build apk --debug
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: app-debug
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
